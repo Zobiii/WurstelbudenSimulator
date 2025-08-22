@@ -29,7 +29,7 @@ namespace Wurstelbuden.Konsole.UI
             {
                 Console.Clear();
                 Console.WriteLine(_title);
-                Console.WriteLine(new string('_', Math.Max(10, _title.Length)));
+                Console.WriteLine(new string('─', Math.Max(10, _title.Length)));
                 for (int i = 0; i < _options.Count; i++)
                 {
                     var prefix = (i == _index) ? "> " : "  ";

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.IO;
 using System.Linq;
 using Wurstelbuden.Konsole.UI;
@@ -97,33 +98,25 @@ namespace Wurstelbuden.Konsole
             var priceList = _market.GetPriceList(_state)
             .OrderBy(k => k.Key)
             .ToList();
-            foreach (var kvp in priceList)
-            {
-                Console.WriteLine($"{kvp.Key,-12} : {kvp.Value,5:0.00} €");
-            }
 
 
+            var menu = new Menu("Supermarkt", priceList.Select(kvp => $"{kvp.Key} - {kvp.Value:0.00} €"));
+            var selectedIndex = menu.Show(StatusText);
+
+            var selectedItem = priceList[selectedIndex];
+            var canonical = selectedItem.Key;
+
+            Console.Clear();
+            Console.WriteLine($"Ausgewählt: {canonical} ({selectedItem.Value:0.00} € pro Stück)");
             Console.WriteLine($"\n{StatusText()}");
-            Console.WriteLine("Gib den Artikelnamen ein (oder leer für Abbruch):");
+            Console.WriteLine("Menge eingeben (Zahl, Enter für Abbruch):");
             Console.Write("> ");
-            var name = Console.ReadLine()?.Trim();
-            if (string.IsNullOrWhiteSpace(name)) return;
-            if (!priceList.Any(p => p.Key.Equals(name, StringComparison.OrdinalIgnoreCase)))
-            {
-                Console.WriteLine("Unbekannter Artikel.");
-                return;
-            }
-            var canonical = priceList.First(p => p.Key.Equals(name, StringComparison.OrdinalIgnoreCase)).Key;
 
-
-            Console.WriteLine("Menge (ganze Zahl):");
-            Console.Write("> ");
             if (!int.TryParse(Console.ReadLine(), out var qty) || qty <= 0)
             {
-                Console.WriteLine("Ungültige Menge.");
+                Console.WriteLine("Abbruch oder ungültige Menge.");
                 return;
             }
-
 
             var ok = _market.TryBuy(_state, canonical, qty);
             if (ok)
