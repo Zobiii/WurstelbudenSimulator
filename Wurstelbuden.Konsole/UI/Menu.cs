@@ -35,7 +35,7 @@ namespace Wurstelbuden.Konsole.UI
 
                 Console.WriteLine();
                 Console.WriteLine("Status: " + statusProvider());
-                Console.WriteLine("\nUse ↑/↓ to navigate, Enter to select. (←/→ not used)");
+                Console.WriteLine("\nVerwende ↑/↓ um zu navigieren, Enter für Bestätigen. (←/→ nicht in Verwendung)");
 
                 var info = Console.ReadKey(true);
                 key = info.Key;
