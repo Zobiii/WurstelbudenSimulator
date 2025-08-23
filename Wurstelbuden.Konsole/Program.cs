@@ -93,41 +93,67 @@ namespace Wurstelbuden.Konsole
 
         private static void ShowSupermarkt()
         {
-            Console.WriteLine("SUPERMARKT – Preise (Einkauf)");
-            Console.WriteLine("────────────────────────────");
             var priceList = _market.GetPriceList(_state)
-            .OrderBy(k => k.Key)
-            .ToList();
+                                    .OrderBy(k => k.Key)
+                                    .ToList();
 
-
-            var menu = new Menu("Supermarkt", priceList.Select(kvp => $"{kvp.Key} - {kvp.Value:0.00} €"));
+            // Artikel-Auswahl
+            var menu = new Menu("Supermarkt – Artikel wählen",
+                                priceList.Select(kvp => $"{kvp.Key} – {kvp.Value:0.00} €"));
             var selectedIndex = menu.Show(StatusText);
-
             var selectedItem = priceList[selectedIndex];
             var canonical = selectedItem.Key;
+            var unitPrice = selectedItem.Value;
 
-            Console.Clear();
-            Console.WriteLine($"Ausgewählt: {canonical} ({selectedItem.Value:0.00} € pro Stück)");
-            Console.WriteLine($"\n{StatusText()}");
-            Console.WriteLine("Menge eingeben (Zahl, Enter für Abbruch):");
-            Console.Write("> ");
-
-            if (!int.TryParse(Console.ReadLine(), out var qty) || qty <= 0)
+            // Mengen-Auswahl mit Pfeiltasten
+            int qty = 1;
+            ConsoleKey key;
+            do
             {
-                Console.WriteLine("Abbruch oder ungültige Menge.");
-                return;
-            }
+                Console.Clear();
+                Console.WriteLine("SUPERMARKT – Kauf bestätigen");
+                Console.WriteLine("───────────────────────────");
+                Console.WriteLine($"Artikel : {canonical}");
+                Console.WriteLine($"Preis   : {unitPrice:0.00} € pro Stück");
+                Console.WriteLine($"Menge   : {qty}");
+                Console.WriteLine($"Kosten  : {qty * unitPrice:0.00} €");
+                Console.WriteLine($"\n{StatusText()}");
 
-            var ok = _market.TryBuy(_state, canonical, qty);
-            if (ok)
+                Console.WriteLine("\nLinks/Rechts = Menge ändern | Enter = Kaufen | Esc = Abbrechen");
+
+                key = Console.ReadKey(true).Key;
+                switch (key)
+                {
+                    case ConsoleKey.LeftArrow:
+                        if (qty > 1) qty--;
+                        break;
+                    case ConsoleKey.RightArrow:
+                        qty++;
+                        break;
+                }
+            } while (key != ConsoleKey.Enter && key != ConsoleKey.Escape);
+
+            if (key == ConsoleKey.Enter)
             {
-                Console.WriteLine($"Gekauft: {qty} × {canonical}. Neuer Kontostand: {_state.Balance:0.00} €");
+                var ok = _market.TryBuy(_state, canonical, qty);
+                Console.Clear();
+                if (ok)
+                {
+                    Console.WriteLine($"Gekauft: {qty} × {canonical}");
+                    Console.WriteLine($"Neuer Kontostand: {_state.Balance:0.00} €");
+                }
+                else
+                {
+                    Console.WriteLine("Kauf fehlgeschlagen (zu wenig Geld?).");
+                }
             }
             else
             {
-                Console.WriteLine("Kauf fehlgeschlagen (zu wenig Geld?).");
+                Console.Clear();
+                Console.WriteLine("Kauf abgebrochen.");
             }
         }
+
 
         private static void EndDay()
         {
