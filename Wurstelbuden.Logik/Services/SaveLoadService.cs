@@ -19,11 +19,17 @@ namespace Wurstelbuden.Logik.Services
             PropertyNameCaseInsensitive = true
         };
 
-        public void Save(GameState state, string path)
+        private const string SaveDir = "saves";
+
+        public void Save(GameState state, string saveName)
         {
-            var dir = Path.GetDirectoryName(path);
-            if (!string.IsNullOrWhiteSpace(dir) && !Directory.Exists(dir))
-                Directory.CreateDirectory(dir);
+            if (string.IsNullOrWhiteSpace(saveName))
+                throw new ArgumentException("Save name cannot be empty.", nameof(saveName));
+
+            if (!Directory.Exists(SaveDir))
+                Directory.CreateDirectory(SaveDir);
+
+            var path = Path.Combine(SaveDir, $"{saveName}.json");
             var json = JsonSerializer.Serialize(state, _opts);
             File.WriteAllText(path, json);
         }
@@ -35,5 +41,16 @@ namespace Wurstelbuden.Logik.Services
                         ?? throw new InvalidOperationException("Failed to deserialize game state.");
             return state;
         }
+
+        public List<string> GetAllSaveFiles()
+        {
+            if (!Directory.Exists(SaveDir))
+                return new List<string>();
+
+            return Directory.GetFiles(SaveDir, "*.json").OrderBy(f => f).ToList();
+        }
+
+        public List<string> GetAllSaveNames()
+            => GetAllSaveFiles().Select(f => Path.GetFileNameWithoutExtension(f)).ToList();
     }
 }

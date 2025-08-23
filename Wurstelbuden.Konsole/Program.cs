@@ -164,7 +164,6 @@ namespace Wurstelbuden.Konsole
             }
         }
 
-
         private static void EndDay()
         {
             Console.WriteLine("TAG BEENDEN – Verkauf wird simuliert…\n");
@@ -191,13 +190,24 @@ namespace Wurstelbuden.Konsole
             }
         }
 
-
         private static void SaveGame()
         {
+            Console.WriteLine("SPIEL SPEICHERN");
+            Console.WriteLine("────────────────");
+            Console.Write("Name für den Spielstand eingeben: ");
+
+            var name = Console.ReadLine()?.Trim();
+
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                Console.WriteLine("Abgebrochen - kein Name eingegeben.");
+                return;
+            }
+
             try
             {
-                _persistence.Save(_state, SavePath);
-                Console.WriteLine($"Spiel gespeichert unter '{SavePath}'.");
+                _persistence.Save(_state, name);
+                Console.WriteLine($"Spiel gespeichert als '{name}'.");
             }
             catch (Exception ex)
             {
@@ -207,11 +217,25 @@ namespace Wurstelbuden.Konsole
 
         private static void LoadGame()
         {
+            Console.WriteLine("SPIEL LADEN");
+            Console.WriteLine("────────────");
+
+            var saves = _persistence.GetAllSaveNames();
+            if (saves.Count == 0)
+            {
+                Console.WriteLine("Keine Spielstände gefunden.");
+                return;
+            }
+
+            var menu = new Menu("Spielstand auswählen", saves);
+            var index = menu.Show(StatusText);
+            var chosenName = saves[index];
+            var path = Path.Combine("saves", $"{chosenName}.json");
+
             try
             {
-                _state = _persistence.Load(SavePath);
-                // Rewire services if necessary (state carries data only)
-                Console.WriteLine($"Spielstand geladen aus '{SavePath}'.");
+                _state = _persistence.Load(path);
+                Console.WriteLine($"Spielstand '{chosenName}' geladen.");
             }
             catch (Exception ex)
             {
