@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Wurstelbuden.Logik.Models;
@@ -21,6 +22,14 @@ namespace Wurstelbuden.Logik.Services
 
         private const string SaveDir = "saves";
 
+        private static string Sanitize(string name)
+        {
+            var invalid = Path.GetInvalidFileNameChars();
+            foreach (var ch in invalid)
+                name = name.Replace(ch, '_');
+            return name.Trim();
+        }
+
         public void Save(GameState state, string saveName)
         {
             if (string.IsNullOrWhiteSpace(saveName))
@@ -29,7 +38,8 @@ namespace Wurstelbuden.Logik.Services
             if (!Directory.Exists(SaveDir))
                 Directory.CreateDirectory(SaveDir);
 
-            var path = Path.Combine(SaveDir, $"{saveName}.json");
+            var clean = Sanitize(saveName);
+            var path = Path.Combine(SaveDir, $"{clean}.json");
             var json = JsonSerializer.Serialize(state, _opts);
             File.WriteAllText(path, json);
         }
@@ -52,5 +62,37 @@ namespace Wurstelbuden.Logik.Services
 
         public List<string> GetAllSaveNames()
             => GetAllSaveFiles().Select(f => Path.GetFileNameWithoutExtension(f)).ToList();
+
+        public bool DeleteSaveByName(string saveName)
+        {
+            var clean = Sanitize(saveName);
+            var path = Path.Combine(SaveDir, $"{clean}.json");
+            if (File.Exists(path))
+            {
+                File.Delete(path);
+                return true;
+            }
+            return false;
+        }
+
+        private static string AutoSaveNameForDay(int day) => $"autosave_day_{day}";
+        private static string AutoSavePathForDay(int day) => Path.Combine(SaveDir, AutoSaveNameForDay(day) + ".json");
+
+        public void AutoSave(GameState state)
+        {
+            if (!Directory.Exists(SaveDir))
+                Directory.CreateDirectory(SaveDir);
+
+            if (state.Day > 1)
+            {
+                var prevPath = AutoSavePathForDay(state.Day - 3);
+                if (File.Exists(prevPath))
+                    File.Delete(prevPath);
+            }
+
+            var currentPath = AutoSavePathForDay(state.Day);
+            var json = JsonSerializer.Serialize(state, _opts);
+            File.WriteAllText(currentPath, json);
+        }
     }
 }

@@ -166,6 +166,16 @@ namespace Wurstelbuden.Konsole
 
         private static void EndDay()
         {
+            try
+            {
+                _persistence.AutoSave(_state);
+                Console.WriteLine($"\nAutosave gespeichert: autosave_day_{_state.Day}.json (Vortag gelöscht)");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Autosave fehlgeschlagen: " + ex.Message);
+            }
+
             Console.WriteLine("TAG BEENDEN – Verkauf wird simuliert…\n");
             var (sold, revenue, weather) = _weather.SimulateDay(_state);
 
@@ -217,30 +227,105 @@ namespace Wurstelbuden.Konsole
 
         private static void LoadGame()
         {
-            Console.WriteLine("SPIEL LADEN");
-            Console.WriteLine("────────────");
-
-            var saves = _persistence.GetAllSaveNames();
-            if (saves.Count == 0)
+            ConsoleKey key;
+            while (true)
             {
-                Console.WriteLine("Keine Spielstände gefunden.");
-                return;
-            }
+                var saves = _persistence.GetAllSaveNames();
+                if (saves.Count == 0)
+                {
+                    Console.Clear();
+                    Console.WriteLine("SPIEL LADEN");
+                    Console.WriteLine("────────────");
+                    Console.WriteLine("Keine Spielstände gefunden.");
+                    return;
+                }
 
-            var menu = new Menu("Spielstand auswählen", saves);
-            var index = menu.Show(StatusText);
-            var chosenName = saves[index];
-            var path = Path.Combine("saves", $"{chosenName}.json");
+                int index = 0;
+                do
+                {
+                    Console.Clear();
+                    Console.WriteLine("SPIEL LADEN – Wähle einen Spielstand");
+                    Console.WriteLine("────────────────────────────────────");
+                    for (int i = 0; i < saves.Count; i++)
+                    {
+                        var prefix = (i == index) ? "> " : "  ";
+                        var name = saves[i];
+                        // Markiere Autosaves etwas anders
+                        if (name.StartsWith("autosave_", StringComparison.OrdinalIgnoreCase))
+                            name += "  (Auto)";
+                        Console.WriteLine(prefix + name);
+                    }
 
-            try
-            {
-                _state = _persistence.Load(path);
-                Console.WriteLine($"Spielstand '{chosenName}' geladen.");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("Fehler beim Laden: " + ex.Message);
+                    Console.WriteLine("\n↑/↓: Auswahl  |  Enter: Laden  |  Entf: Löschen  |  Esc: Abbrechen");
+                    Console.WriteLine($"\n{StatusText()}");
+
+                    key = Console.ReadKey(true).Key;
+                    switch (key)
+                    {
+                        case ConsoleKey.UpArrow:
+                            index = (index - 1 + saves.Count) % saves.Count;
+                            break;
+                        case ConsoleKey.DownArrow:
+                            index = (index + 1) % saves.Count;
+                            break;
+
+                        case ConsoleKey.Delete:
+                            {
+                                var toDelete = saves[index];
+                                Console.WriteLine($"\nSpielstand '{toDelete}' wirklich löschen? (y/n)");
+                                var confirm = Console.ReadKey(true).Key;
+                                if (confirm == ConsoleKey.Y)
+                                {
+                                    var ok = _persistence.DeleteSaveByName(toDelete);
+                                    if (!ok)
+                                    {
+                                        Console.WriteLine("Löschen fehlgeschlagen (Datei nicht gefunden?).");
+                                        Console.ReadKey(true);
+                                    }
+                                    else
+                                    {
+                                        // Liste neu laden und Index anpassen
+                                        saves = _persistence.GetAllSaveNames();
+                                        if (saves.Count == 0)
+                                        {
+                                            Console.WriteLine("\nAlle Spielstände gelöscht.");
+                                            Console.ReadKey(true);
+                                            return;
+                                        }
+                                        index = Math.Min(index, saves.Count - 1);
+                                    }
+                                }
+                            }
+                            break;
+
+                        case ConsoleKey.Enter:
+                            {
+                                var chosenName = saves[index];
+                                var path = Path.Combine("saves", $"{chosenName}.json");
+                                try
+                                {
+                                    _state = _persistence.Load(path);
+                                    _inv.EnsureCatalogDefaults(_state);
+                                    _weather.EnsureForecast(_state);
+                                    Console.WriteLine($"\nSpielstand '{chosenName}' geladen.");
+                                    Console.WriteLine(StatusText());
+                                    return;
+                                }
+                                catch (Exception ex)
+                                {
+                                    Console.WriteLine("Fehler beim Laden: " + ex.Message);
+                                    Console.ReadKey(true);
+                                }
+                            }
+                            break;
+
+                        case ConsoleKey.Escape:
+                            return;
+                    }
+
+                } while (true);
             }
         }
+
     }
 }
