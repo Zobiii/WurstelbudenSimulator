@@ -74,10 +74,20 @@ namespace Wurstelbuden.Konsole
 
         private static void ShowLager()
         {
-            Console.WriteLine("LAGER");
-            Console.WriteLine("─────");
-            foreach (var kvp in _state.Inventory.OrderBy(k => k.Key))
-                Console.WriteLine($"{kvp.Key,-12} : {kvp.Value,4}");
+            Console.WriteLine("LAGER (mit Haltbarkeit)");
+            Console.WriteLine("────────────────────────");
+
+            var groups = _state.InventoryBatches.GroupBy(b => b.ItemName).OrderBy(g => g.Key);
+
+            foreach (var g in groups)
+            {
+                var total = g.Sum(b => b.Quantity);
+                var batches = string.Join(", ", g.OrderBy(b => b.ExpiryDay).Select(b => $"{b.Quantity} (bis Tag {b.ExpiryDay})"));
+                Console.WriteLine($"{g.Key,-12} : {total,4} | {batches}");
+            }
+
+            if (!_state.InventoryBatches.Any())
+                Console.WriteLine("(leer)");
         }
 
         private static void ShowWetter()
@@ -159,6 +169,8 @@ namespace Wurstelbuden.Konsole
         {
             Console.WriteLine("TAG BEENDEN – Verkauf wird simuliert…\n");
             var (sold, revenue, weather) = _weather.SimulateDay(_state);
+
+
             Console.WriteLine($"Wetter heute: {weather}");
             Console.WriteLine("Verkäufe:");
             foreach (var kvp in sold.OrderBy(k => k.Key))
@@ -167,6 +179,16 @@ namespace Wurstelbuden.Konsole
             }
             Console.WriteLine($"\nEinnahmen: {revenue:0.00} €");
             Console.WriteLine($"Neuer Kontostand: {_state.Balance:0.00} €");
+
+            var expired = _inv.RemoveExpired(_state);
+            if (expired.Count > 0)
+            {
+                Console.WriteLine("\nFolgende Waren sind verdorben und wurden entsorgt:");
+                foreach (var kvp in expired)
+                {
+                    Console.WriteLine($"  {kvp.Key,-12} : {kvp.Value,4}");
+                }
+            }
         }
 
 

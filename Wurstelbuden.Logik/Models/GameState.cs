@@ -12,8 +12,9 @@ namespace Wurstelbuden.Logik.Models
     {
         public int Day { get; set; } = 1;
         public decimal Balance { get; set; } = 100m;
-        public Dictionary<string, int> Inventory { get; set; } = new();
+
         public List<WeatherType> Forecast { get; set; } = new();
         public Dictionary<string, Item> Catalog { get; set; } = new();
+        public List<InventoryBatch> InventoryBatches { get; set; } = new();
     }
 }

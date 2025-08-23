@@ -11,11 +11,15 @@ namespace Wurstelbuden.Logik.Models
         public string Name { get; init; }
         public decimal SellPrice { get; init; }
         public decimal BuyPrice { get; init; }
-        public Item(string name, decimal sellPrice, decimal buyPrice)
+
+        public int ShelfLifeDays { get; init; }
+
+        public Item(string name, decimal sellPrice, decimal buyPrice, int shelfLifeDays = 0)
         {
             Name = name;
             SellPrice = sellPrice;
             BuyPrice = buyPrice;
+            ShelfLifeDays = shelfLifeDays;
         }
     }
 }

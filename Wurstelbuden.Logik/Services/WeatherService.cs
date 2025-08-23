@@ -61,28 +61,24 @@ namespace Wurstelbuden.Logik.Services
             var sold = new Dictionary<string, int>();
             decimal revenue = 0;
 
+            var inv = new InventoryService();
+
             foreach (var kvp in state.Catalog)
             {
                 var name = kvp.Key;
                 var item = kvp.Value;
-                if (item.SellPrice <= 0) continue;
+                if (item.SellPrice <= 0) { sold[name] = 0; continue; }
 
                 var baseWant = 8;
                 var factor = demand.TryGetValue(name, out var f) ? f : 1.0;
                 var want = (int)Math.Round(baseWant * factor + _rng.Next(0, 6));
-                var available = state.Inventory.TryGetValue(name, out var q) ? q : 0;
-                var canSell = Math.Min(want, available);
 
+
+                var canSell = inv.Consume(state, name, want);
+
+                sold[name] = canSell;
                 if (canSell > 0)
-                {
-                    state.Inventory[name] = available - canSell;
-                    sold[name] = canSell;
                     revenue += canSell * item.SellPrice;
-                }
-                else
-                {
-                    sold[name] = 0;
-                }
             }
 
             state.Balance += revenue;

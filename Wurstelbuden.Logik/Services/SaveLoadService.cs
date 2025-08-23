@@ -15,7 +15,8 @@ namespace Wurstelbuden.Logik.Services
         private readonly JsonSerializerOptions _opts = new()
         {
             WriteIndented = true,
-            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+            PropertyNameCaseInsensitive = true
         };
 
         public void Save(GameState state, string path)
