@@ -1,5 +1,3 @@
-using System;
-
 namespace Wurstelbuden.Logik.Models
 {
     /// <summary>

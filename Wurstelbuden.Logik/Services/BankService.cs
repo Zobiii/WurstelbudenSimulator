@@ -1,5 +1,3 @@
-using System;
-using System.Data;
 using Wurstelbuden.Logik.Models;
 
 namespace Wurstelbuden.Logik.Services
