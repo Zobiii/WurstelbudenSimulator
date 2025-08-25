@@ -118,10 +118,11 @@ namespace Wurstelbuden.Konsole
                 Console.Clear();
                 Console.WriteLine("SUPERMARKT – Kauf bestätigen");
                 Console.WriteLine("───────────────────────────");
-                Console.WriteLine($"Artikel : {canonical}");
-                Console.WriteLine($"Preis   : {unitPrice:0.00} € pro Stück");
-                Console.WriteLine($"Menge   : {qty}");
-                Console.WriteLine($"Kosten  : {qty * unitPrice:0.00} €");
+                Console.WriteLine($"Artikel   : {canonical}");
+                Console.WriteLine($"Preis     : {unitPrice:0.00} € pro Stück");
+                Console.WriteLine($"Menge     : {qty}");
+                Console.WriteLine($"Kosten    : {qty * unitPrice:0.00} €");
+                Console.WriteLine($"Nach Kauf : {_state.Balance - qty * unitPrice:0.00} €");
                 Console.WriteLine($"\n{StatusText()}");
 
                 Console.WriteLine("\nLinks/Rechts = Menge ändern | Enter = Kaufen | Esc = Abbrechen");
