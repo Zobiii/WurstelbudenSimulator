@@ -59,14 +59,87 @@ namespace Wurstelbuden.Konsole
         }
 
         private static string StatusText()
-            => $"Tag {_state.Day} | Kontostand: {_state.Balance:0.00} €";
+            => $"Tag {_state.Day} | Kontostand: {_state.Balance:0.00} € | Sparbuch: {_state.SavingsBalance} € | Kredit: {_state.LoanBalance} €";
 
         private static void ShowBank()
         {
-            Console.WriteLine("BANK");
-            Console.WriteLine("────");
-            Console.WriteLine(StatusText());
-            Console.WriteLine("\n(Info) Hier gibt es aktuell nur den Kontostand. Später werden Kredite ergänzt.");
+            while (true)
+            {
+                Console.Clear();
+                Console.WriteLine("BANK");
+                Console.WriteLine("────");
+                Console.WriteLine(StatusText());
+                Console.WriteLine($"Sparkonto: {_state.SavingsBalance:0.00} €");
+                Console.WriteLine($"Kredit    : {_state.LoanBalance:0.00} €");
+                Console.WriteLine($"Zinsen p.a.: Sparen {_state.SavingsRateAnnual:P2} | Kredit {_state.LoanRateAnnual:P2}\n");
+
+                var bankMenu = new Menu("Bank – Aktion wählen", new[]
+                {
+            "Auf Sparkonto einzahlen",
+            "Vom Sparkonto abheben",
+            "Kredit aufnehmen",
+            "Kredit zurückzahlen",
+            "Zurück"
+        });
+
+                var choice = bankMenu.Show(StatusText);
+                Console.Clear();
+
+                switch (choice)
+                {
+                    case 0:
+                        {
+                            var amount = ChooseAmount("Einzahlen aufs Sparkonto", maxSuggestion: _state.Balance);
+                            if (amount < 0) break;
+                            if (_bank.TransferToSavings(_state, amount))
+                                Console.WriteLine($"Eingezahlt: {amount:0.00} € → Sparkonto: {_state.SavingsBalance:0.00} €");
+                            else
+                                Console.WriteLine("Nicht genug Guthaben auf dem Hauptkonto.");
+                            Pause();
+                            break;
+                        }
+                    case 1:
+                        {
+                            var amount = ChooseAmount("Abheben vom Sparkonto", maxSuggestion: _state.SavingsBalance);
+                            if (amount < 0) break;
+                            if (_bank.TransferFromSavings(_state, amount))
+                                Console.WriteLine($"Abgehoben: {amount:0.00} € → Sparkonto: {_state.SavingsBalance:0.00} €");
+                            else
+                                Console.WriteLine("Nicht genug Guthaben auf dem Sparkonto.");
+                            Pause();
+                            break;
+                        }
+                    case 2:
+                        {
+                            var amount = ChooseAmount("Kredit aufnehmen", maxSuggestion: 1000m);
+                            if (amount < 0) break;
+                            _bank.TakeLoan(_state, amount);
+                            Console.WriteLine($"Kredit aufgenommen: {amount:0.00} € → Kreditstand: {_state.LoanBalance:0.00} €");
+                            Pause();
+                            break;
+                        }
+                    case 3:
+                        {
+                            var maxPay = Math.Min(_state.Balance, _state.LoanBalance);
+                            var amount = ChooseAmount("Kredit zurückzahlen", maxSuggestion: maxPay);
+                            if (amount < 0) break;
+                            if (_bank.RepayLoan(_state, amount))
+                                Console.WriteLine($"Zurückgezahlt: {amount:0.00} € → Kreditstand: {_state.LoanBalance:0.00} €");
+                            else
+                                Console.WriteLine("Zahlung nicht möglich (zu wenig Guthaben?).");
+                            Pause();
+                            break;
+                        }
+                    case 4:
+                        return;
+                }
+            }
+
+            static void Pause()
+            {
+                Console.WriteLine("\nTaste drücken…");
+                Console.ReadKey(true);
+            }
         }
 
         private static void ShowLager()
@@ -176,6 +249,9 @@ namespace Wurstelbuden.Konsole
 
             Console.WriteLine("TAG BEENDEN – Verkauf wird simuliert…\n");
             var (sold, revenue, weather) = _weather.SimulateDay(_state);
+
+            _bank.ApplyDailyInterest(_state);
+            Console.WriteLine($"\nZinsen verbucht: Sparen p.a. {_state.SavingsRateAnnual:P2} | Kredit p.a. {_state.LoanRateAnnual:P2}\n");
 
 
             Console.WriteLine($"Wetter heute: {weather}");
@@ -334,6 +410,57 @@ namespace Wurstelbuden.Konsole
 
                 } while (true);
             }
+        }
+
+        private static decimal ChooseAmount(string title, decimal maxSuggestion)
+        {
+            ConsoleKey key;
+            decimal stepSmall = 1.00m;
+            decimal stepBig = 10.00m;
+            decimal amount = stepSmall;
+
+            if (maxSuggestion <= 0) maxSuggestion = stepSmall * 10;
+
+            do
+            {
+                Console.Clear();
+                Console.WriteLine(title);
+                Console.WriteLine(new string('─', Math.Max(10, title.Length)));
+                Console.WriteLine($"Betrag : {amount:0.00} €");
+                Console.WriteLine($"Hinweis: Vorschlag max. ≈ {maxSuggestion:0.00} €");
+                Console.WriteLine($"\n{StatusText()}");
+                Console.WriteLine("\n←/→ = ±1€ | PgUp/PgDn = ±10€ | Home = 0€ | End = max | Enter = OK | Esc = Abbrechen");
+
+                key = Console.ReadKey(true).Key;
+                switch (key)
+                {
+                    case ConsoleKey.LeftArrow:
+                        amount = Math.Max(0m, amount - stepSmall);
+                        break;
+                    case ConsoleKey.RightArrow:
+                        amount += stepSmall;
+                        break;
+                    case ConsoleKey.PageUp:
+                        amount += stepBig;
+                        break;
+                    case ConsoleKey.PageDown:
+                        amount = Math.Max(0m, amount - stepBig);
+                        break;
+                    case ConsoleKey.Home:
+                        amount = 0m;
+                        break;
+                    case ConsoleKey.End:
+                        amount = maxSuggestion > 0 ? maxSuggestion : amount;
+                        break;
+                }
+
+                // Clamp and round
+                if (amount > 999999m) amount = 999999m;
+                amount = decimal.Round(amount, 2, MidpointRounding.AwayFromZero);
+
+            } while (key != ConsoleKey.Enter && key != ConsoleKey.Escape);
+
+            return key == ConsoleKey.Enter ? amount : -1m;
         }
 
     }
