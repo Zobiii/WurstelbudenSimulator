@@ -12,5 +12,6 @@ namespace Wurstelbuden.Logik.Models
         public List<WeatherType> Forecast { get; set; } = new();
         public Dictionary<string, Item> Catalog { get; set; } = new();
         public List<InventoryBatch> InventoryBatches { get; set; } = new();
+        public int SchemaVersion { get; set; } = 1;
     }
 }
