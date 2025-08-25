@@ -17,6 +17,8 @@ namespace Wurstelbuden.Konsole
 
         private static void Main()
         {
+            Console.Title = "Würstelbuden-Simulator";
+
             _inv.EnsureCatalogDefaults(_state);
             _weather.EnsureForecast(_state);
 
