@@ -245,7 +245,6 @@ namespace Wurstelbuden.Konsole
                     {
                         var prefix = (i == index) ? "> " : "  ";
                         var name = saves[i];
-                        // Markiere Autosaves etwas anders
                         if (name.StartsWith("autosave_", StringComparison.OrdinalIgnoreCase))
                             name += "  (Auto)";
                         Console.WriteLine(prefix + name);
@@ -279,7 +278,6 @@ namespace Wurstelbuden.Konsole
                                     }
                                     else
                                     {
-                                        // Liste neu laden und Index anpassen
                                         saves = _persistence.GetAllSaveNames();
                                         if (saves.Count == 0)
                                         {

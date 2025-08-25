@@ -29,8 +29,17 @@ namespace Wurstelbuden.Konsole.UI
                 for (int i = 0; i < _options.Count; i++)
                 {
                     var prefix = (i == _index) ? "> " : "  ";
-                    var line = (i == _index) ? Highlight(_options[i]) : _options[i];
-                    Console.WriteLine(prefix + line);
+                    if (i == _index)
+                    {
+                        var prev = Console.ForegroundColor;
+                        Console.ForegroundColor = ConsoleColor.Cyan;
+                        Console.WriteLine(prefix + _options[i]);
+                        Console.ForegroundColor = prev;
+                    }
+                    else
+                    {
+                        Console.WriteLine(prefix + _options[i]);
+                    }
                 }
 
                 Console.WriteLine();
@@ -56,15 +65,6 @@ namespace Wurstelbuden.Konsole.UI
 
             Console.CursorVisible = true;
             return _index;
-        }
-
-        private static string Highlight(string text)
-        {
-            var prev = Console.ForegroundColor;
-            Console.ForegroundColor = ConsoleColor.Cyan;
-            Console.Write("\r\x1b[2K");
-            Console.ForegroundColor = prev;
-            return text;
         }
     }
 }
