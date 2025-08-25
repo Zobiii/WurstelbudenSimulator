@@ -8,6 +8,10 @@ namespace Wurstelbuden.Logik.Models
     {
         public int Day { get; set; } = 1;
         public decimal Balance { get; set; } = 100m;
+        public decimal LoanBalance { get; set; } = 0m;
+        public decimal SavingsBalance { get; set; } = 0m;
+        public decimal SavingsRateAnnual { get; set; } = 0.02m;
+        public decimal LoanRateAnnual { get; set; } = 0.10m;
 
         public List<WeatherType> Forecast { get; set; } = new();
         public Dictionary<string, Item> Catalog { get; set; } = new();
