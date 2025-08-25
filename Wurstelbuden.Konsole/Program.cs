@@ -212,6 +212,19 @@ namespace Wurstelbuden.Konsole
 
             try
             {
+                var path = Path.Combine("saves", $"{name}.json");
+
+                if (File.Exists(path))
+                {
+                    Console.WriteLine($"\n'{name}' existiert bereits. Überschreiben? (y/n) ");
+                    var k = Console.ReadKey(true).Key;
+                    if (k != ConsoleKey.Y)
+                    {
+                        Console.WriteLine("\nAbgebrochen.");
+                        return;
+                    }
+                }
+
                 _persistence.Save(_state, name);
                 Console.WriteLine($"Spiel gespeichert als '{name}'.");
             }
